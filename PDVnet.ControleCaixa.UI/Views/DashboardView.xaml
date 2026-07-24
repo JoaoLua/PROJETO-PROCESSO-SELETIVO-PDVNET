@@ -1,0 +1,73 @@
+<UserControl x:Class="PDVnet.ControleCaixa.UI.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Background="#FFFFFF">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Configuração de Limite de Alerta -->
+        <Border Grid.Row="0" Background="#E5E2E1" CornerRadius="8" Padding="15" Margin="0,0,0,20">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <materialDesign:PackIcon Kind="Cog" Width="24" Height="24" Foreground="#333333" VerticalAlignment="Center"/>
+                <TextBlock Text="Configurar Alerta de Saldo Baixo:" FontSize="16" FontWeight="SemiBold" Foreground="#333333" Margin="10,0,15,0" VerticalAlignment="Center"/>
+                <TextBox Text="{Binding LimiteAlerta, UpdateSourceTrigger=PropertyChanged, StringFormat=C}" 
+                         Width="150" materialDesign:HintAssist.Hint="R$ 100,00" 
+                         VerticalAlignment="Center" FontSize="16" FontWeight="Bold"/>
+                <TextBlock Text="(Aviso aparecerá no cabeçalho se o saldo ficar abaixo deste valor)" FontSize="13" Foreground="#333333" Opacity="0.7" Margin="15,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Cards de Resumo -->
+        <UniformGrid Grid.Row="1" Columns="4" Rows="1">
+            <!-- Saldo Total -->
+            <materialDesign:Card Background="#021651" Foreground="#FFFFFF" Padding="20" Margin="5" UniformCornerRadius="10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Wallet" Width="24" Height="24"/>
+                        <TextBlock Text="Saldo Total" FontSize="16" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Resumo.SaldoTotal, StringFormat=C}" FontSize="28" FontWeight="Bold" Margin="0,15,0,0"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Total Entradas -->
+            <materialDesign:Card Background="#FFFFFF" Padding="20" Margin="5" UniformCornerRadius="10" materialDesign:ShadowAssist.ShadowDepth="Depth1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="ArrowUpCircle" Width="24" Height="24" Foreground="Green"/>
+                        <TextBlock Text="Entradas" FontSize="16" Foreground="#333333" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Resumo.TotalEntradas, StringFormat=C}" FontSize="28" FontWeight="Bold" Foreground="Green" Margin="0,15,0,0"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Total Saídas -->
+            <materialDesign:Card Background="#FFFFFF" Padding="20" Margin="5" UniformCornerRadius="10" materialDesign:ShadowAssist.ShadowDepth="Depth1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="ArrowDownCircle" Width="24" Height="24" Foreground="#DC143C"/>
+                        <TextBlock Text="Saídas" FontSize="16" Foreground="#333333" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Resumo.TotalSaidas, StringFormat=C}" FontSize="28" FontWeight="Bold" Foreground="#DC143C" Margin="0,15,0,0"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Total Movimentações -->
+            <materialDesign:Card Background="#FFFFFF" Padding="20" Margin="5" UniformCornerRadius="10" materialDesign:ShadowAssist.ShadowDepth="Depth1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="FormatListBulleted" Width="24" Height="24" Foreground="#333333"/>
+                        <TextBlock Text="Total Lançamentos" FontSize="16" Foreground="#333333" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Resumo.TotalMovimentacoes}" FontSize="28" FontWeight="Bold" Foreground="#333333" Margin="0,15,0,0"/>
+                </StackPanel>
+            </materialDesign:Card>
+        </UniformGrid>
+
+    </Grid>
+</UserControl>
