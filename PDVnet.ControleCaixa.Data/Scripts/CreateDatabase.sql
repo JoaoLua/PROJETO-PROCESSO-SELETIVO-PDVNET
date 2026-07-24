@@ -1,32 +1,20 @@
-﻿IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'PDVnetControleCaixa')
-BEGIN
+﻿IF DB_ID('PDVnetControleCaixa') IS NULL
     CREATE DATABASE PDVnetControleCaixa;
-END
 GO
 
 USE PDVnetControleCaixa;
 GO
 
-IF NOT EXISTS (
-    SELECT 1 FROM sys.objects
-    WHERE object_id = OBJECT_ID(N'dbo.MovimentacaoCaixa') AND type = N'U'
-)
+IF OBJECT_ID('dbo.MovimentacaoCaixa', 'U') IS NULL
 BEGIN
-    CREATE TABLE dbo.MovimentacaoCaixa
-    (
-        Id            INT           IDENTITY(1,1) NOT NULL,
+    CREATE TABLE dbo.MovimentacaoCaixa (
+        Id            INT           IDENTITY(1,1) PRIMARY KEY,
         Descricao     VARCHAR(200)                NOT NULL,
-        Tipo          INT                         NOT NULL,   -- 1 = Entrada | 2 = Saída
+        Tipo          INT                         NOT NULL CHECK (Tipo IN (1, 2)),
         Categoria     VARCHAR(100)                NULL,
-        Valor         DECIMAL(10,2)               NOT NULL,
-        DataMovimento DATETIME                    NOT NULL
-            CONSTRAINT DF_MovimentacaoCaixa_DataMovimento DEFAULT (GETDATE()),
-        Status        BIT                         NOT NULL
-            CONSTRAINT DF_MovimentacaoCaixa_Status DEFAULT (1),  -- 1 = Ativo | 0 = Inativo
-
-        CONSTRAINT PK_MovimentacaoCaixa PRIMARY KEY CLUSTERED (Id),
-        CONSTRAINT CK_MovimentacaoCaixa_Valor CHECK (Valor > 0),
-        CONSTRAINT CK_MovimentacaoCaixa_Tipo  CHECK (Tipo IN (1, 2))
+        Valor         DECIMAL(10,2)               NOT NULL CHECK (Valor > 0),
+        DataMovimento DATETIME                    NOT NULL DEFAULT GETDATE(),
+        Status        BIT                         NOT NULL DEFAULT 1               
     );
 END
 GO

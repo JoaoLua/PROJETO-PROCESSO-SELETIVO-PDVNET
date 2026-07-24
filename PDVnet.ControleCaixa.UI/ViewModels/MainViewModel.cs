@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using System.Windows.Input;
 using ControleCaixa.Bussines.Services;
 using ControleCaixa.Data;
@@ -15,6 +17,8 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             set => SetProperty(ref _currentViewModel, value);
         }
 
+        private readonly string _configPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\PDVnet.ControleCaixa.Data\alerta_config.txt"));
+
         private decimal _limiteAlerta = 100m;
         public decimal LimiteAlerta
         {
@@ -24,6 +28,7 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
                 if (SetProperty(ref _limiteAlerta, value))
                 {
                     VerificarAlerta();
+                    SalvarConfiguracao(value);
                 }
             }
         }
@@ -49,15 +54,15 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
 
         public MainViewModel()
         {
+            CarregarConfiguracao();
+            
             _service = new MovimentacaoService(new MovimentacaoRepository());
 
             AbrirMovimentacoesCommand = new RelayCommand(_ => AbrirMovimentacoes());
             AbrirDashboardCommand = new RelayCommand(_ => AbrirDashboard());
             
-            // Inicia nas Movimentações
             AbrirMovimentacoes();
             
-            // Garante que o alerta do cabeçalho seja calculado logo na inicialização
             AtualizarResumo();
         }
 
@@ -72,7 +77,6 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             }
             else
             {
-                // Recarrega os dados caso tenha havido mudanças via dashboard
                 _movimentacoesViewModel.BuscarCommand.Execute(null);
             }
             
@@ -112,6 +116,31 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             {
                 MostrarAlerta = false;
             }
+        }
+
+        private void CarregarConfiguracao()
+        {
+            try
+            {
+                if (File.Exists(_configPath))
+                {
+                    var conteudo = File.ReadAllText(_configPath);
+                    if (decimal.TryParse(conteudo, out decimal valorSalvo))
+                    {
+                        _limiteAlerta = valorSalvo;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void SalvarConfiguracao(decimal valor)
+        {
+            try
+            {
+                File.WriteAllText(_configPath, valor.ToString());
+            }
+            catch { }
         }
     }
 }
