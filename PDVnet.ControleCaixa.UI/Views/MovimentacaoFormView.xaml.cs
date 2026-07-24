@@ -13,8 +13,19 @@ namespace PDVnet.ControleCaixa.UI.Views
 
         private void ValidarEntradaNumerica(object sender, TextCompositionEventArgs e)
         {
-            Regex regex = new Regex("[^0-9,]+");
-            e.Handled = regex.IsMatch(e.Text);
+            var textBox = sender as TextBox;
+            var textoAtual = textBox?.Text ?? "";
+
+            if (!Regex.IsMatch(e.Text, @"^[0-9,.]$"))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            if ((e.Text == "," || e.Text == ".") && (textoAtual.Contains(',') || textoAtual.Contains('.')))
+            {
+                e.Handled = true;
+            }
         }
     }
 }

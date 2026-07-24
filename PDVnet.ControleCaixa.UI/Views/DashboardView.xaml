@@ -10,7 +10,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Configuração de Limite de Alerta -->
         <Border Grid.Row="0" Background="#E5E2E1" CornerRadius="8" Padding="15" Margin="0,0,0,20">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <materialDesign:PackIcon Kind="Cog" Width="24" Height="24" Foreground="#333333" VerticalAlignment="Center"/>
@@ -22,9 +21,7 @@
             </StackPanel>
         </Border>
 
-        <!-- Cards de Resumo -->
         <UniformGrid Grid.Row="1" Columns="4" Rows="1">
-            <!-- Saldo Total -->
             <materialDesign:Card Background="#021651" Foreground="#FFFFFF" Padding="20" Margin="5" UniformCornerRadius="10">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
@@ -35,7 +32,6 @@
                 </StackPanel>
             </materialDesign:Card>
 
-            <!-- Total Entradas -->
             <materialDesign:Card Background="#FFFFFF" Padding="20" Margin="5" UniformCornerRadius="10" materialDesign:ShadowAssist.ShadowDepth="Depth1">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
@@ -46,7 +42,6 @@
                 </StackPanel>
             </materialDesign:Card>
 
-            <!-- Total Saídas -->
             <materialDesign:Card Background="#FFFFFF" Padding="20" Margin="5" UniformCornerRadius="10" materialDesign:ShadowAssist.ShadowDepth="Depth1">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
@@ -57,7 +52,6 @@
                 </StackPanel>
             </materialDesign:Card>
 
-            <!-- Total Movimentações -->
             <materialDesign:Card Background="#FFFFFF" Padding="20" Margin="5" UniformCornerRadius="10" materialDesign:ShadowAssist.ShadowDepth="Depth1">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">

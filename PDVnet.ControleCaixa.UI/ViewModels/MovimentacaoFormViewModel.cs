@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Input;
 using ControleCaixa.Model;
@@ -24,11 +25,13 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
 
         public List<string> CategoriasDisponiveis { get; } = new List<string>
         {
-            "Alimentação",
-            "Transporte",
             "Vendas",
             "Pagamentos",
+            "Serviços Agregados",
+            "Recebimento de Fornecedores",
+            "Contas de Consumo",
             "Salário",
+            "Manutenção e Reparos",
             "Outros"
         };
 
@@ -43,7 +46,27 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
         public decimal Valor
         {
             get => _valor;
-            set => SetProperty(ref _valor, value);
+            private set => SetProperty(ref _valor, value);
+        }
+
+        private string _valorTexto;
+        public string ValorTexto
+        {
+            get => _valorTexto;
+            set
+            {
+                if (SetProperty(ref _valorTexto, value))
+                {
+                    // Normaliza: troca vírgula por ponto para parsing
+                    var normalizado = (value ?? "").Replace(',', '.');
+                    if (decimal.TryParse(normalizado, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal resultado))
+                        _valor = resultado;
+                    else
+                        _valor = 0;
+
+                    OnPropertyChanged(nameof(Valor));
+                }
+            }
         }
 
         private TipoMovimentacao _tipo;
@@ -65,7 +88,7 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
 
         public MovimentacaoFormViewModel(MovimentacaoCaixa movimentacaoExistente = null)
         {
-            // Se vier nulo, cria uma nova inicializando as propriedades required.
+
             _movimentacao = movimentacaoExistente ?? new MovimentacaoCaixa() 
             { 
                 DataMovimento = DateTime.Now,
@@ -74,13 +97,12 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             };
 
             Descricao = _movimentacao.Descricao ?? "";
-            Valor = _movimentacao.Valor;
+            ValorTexto = _movimentacao.Valor > 0 ? _movimentacao.Valor.ToString("F2", CultureInfo.InvariantCulture) : "";
             Tipo = _movimentacao.Tipo;
             Categoria = string.IsNullOrEmpty(_movimentacao.Categoria) ? CategoriasDisponiveis[0] : _movimentacao.Categoria;
 
             SalvarCommand = new RelayCommand(_ => Salvar(), _ => PodeSalvar());
             
-            // O comando de fechar do MaterialDesign recebe o valor de retorno (false significa cancelar)
             CancelarCommand = new RelayCommand(_ => DialogHost.CloseDialogCommand.Execute(false, null));
         }
 
@@ -91,7 +113,6 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             _movimentacao.Tipo = Tipo;
             _movimentacao.Categoria = Categoria;
 
-            // Retorna a movimentação preenchida para quem abriu o Modal
             DialogHost.CloseDialogCommand.Execute(_movimentacao, null);
         }
 
@@ -106,7 +127,7 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
         {
             get
             {
-                var errors = new[] { this[nameof(Descricao)], this[nameof(Valor)], this[nameof(Categoria)] };
+                var errors = new[] { this[nameof(Descricao)], this[nameof(ValorTexto)], this[nameof(Categoria)] };
                 return errors.Any(e => e != null) ? "Erros no formulário" : null;
             }
         }
@@ -120,14 +141,12 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
                 if (columnName == nameof(Descricao) && string.IsNullOrWhiteSpace(Descricao))
                     result = "A descrição é obrigatória.";
                 
-                // Validação para não aceitar valores negativos ou zero
-                if (columnName == nameof(Valor) && Valor <= 0)
+                if (columnName == nameof(ValorTexto) && Valor <= 0)
                     result = "O valor deve ser maior que zero.";
                 
                 if (columnName == nameof(Categoria) && string.IsNullOrWhiteSpace(Categoria))
                     result = "A categoria é obrigatória.";
 
-                // Atualiza o estado do botão Salvar toda vez que uma validação é checada
                 CommandManager.InvalidateRequerySuggested();
                 
                 return result;

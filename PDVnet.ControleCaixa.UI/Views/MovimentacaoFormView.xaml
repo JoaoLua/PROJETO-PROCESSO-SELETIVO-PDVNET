@@ -15,45 +15,35 @@
 
         <TextBlock Grid.Row="0" Text="{Binding Titulo}" FontSize="20" FontWeight="Bold" Margin="0,0,0,20" Foreground="#021651"/>
 
-        <!-- Descrição -->
         <TextBox Grid.Row="1"
                  materialDesign:HintAssist.Hint="Descrição"
                  Style="{StaticResource MaterialDesignFloatingHintTextBox}"
                  Text="{Binding Descricao, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                  Margin="0,0,0,15" />
-
-        <!-- Valor com evento para bloquear letras -->
         <TextBox Grid.Row="2"
                  materialDesign:HintAssist.Hint="Valor (R$)"
                  Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-                 Text="{Binding Valor, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                 Text="{Binding ValorTexto, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                  PreviewTextInput="ValidarEntradaNumerica"
                  Margin="0,0,0,15" />
-
-        <!-- Tipo -->
         <ComboBox Grid.Row="3"
                   materialDesign:HintAssist.Hint="Tipo"
                   Style="{StaticResource MaterialDesignFloatingHintComboBox}"
                   ItemsSource="{Binding TiposDisponiveis}"
                   SelectedItem="{Binding Tipo, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                   Margin="0,0,0,15" />
-
-        <!-- Categoria -->
         <ComboBox Grid.Row="4"
                   materialDesign:HintAssist.Hint="Categoria"
                   Style="{StaticResource MaterialDesignFloatingHintComboBox}"
                   ItemsSource="{Binding CategoriasDisponiveis}"
                   SelectedItem="{Binding Categoria, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
                   Margin="0,0,0,25" />
-
-        <!-- Botões -->
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="Cancelar"
                     Command="{Binding CancelarCommand}"
                     Style="{StaticResource MaterialDesignOutlinedButton}"
                     Foreground="#DC143C" BorderBrush="#DC143C"
                     Margin="0,0,10,0" />
-            
             <Button Content="Salvar"
                     Command="{Binding SalvarCommand}"
                     Style="{StaticResource MaterialDesignRaisedButton}"
