@@ -15,8 +15,6 @@
         FontFamily="{DynamicResource MaterialDesignFont}">
 
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVis" />
-        
         <!-- Mapeamentos de ViewModel para View -->
         <DataTemplate DataType="{x:Type viewmodels:MovimentacoesViewModel}">
             <views:MovimentacoesView />

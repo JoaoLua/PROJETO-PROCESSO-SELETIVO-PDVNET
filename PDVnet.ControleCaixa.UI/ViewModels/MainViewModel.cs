@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Windows.Input;
-using ControleCaixa.Bussines.Services;
+using ControleCaixa.Business.Services;
 using ControleCaixa.Data;
 
 namespace PDVnet.ControleCaixa.UI.ViewModels
@@ -17,7 +17,9 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             set => SetProperty(ref _currentViewModel, value);
         }
 
-        private readonly string _configPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\PDVnet.ControleCaixa.Data\alerta_config.txt"));
+        private readonly string _configPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "PDVnetControleCaixa", "alerta_config.txt");
 
         private decimal _limiteAlerta = 100m;
         public decimal LimiteAlerta
@@ -138,6 +140,10 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
         {
             try
             {
+                var diretorio = Path.GetDirectoryName(_configPath);
+                if (!string.IsNullOrEmpty(diretorio))
+                    Directory.CreateDirectory(diretorio);
+                    
                 File.WriteAllText(_configPath, valor.ToString());
             }
             catch { }

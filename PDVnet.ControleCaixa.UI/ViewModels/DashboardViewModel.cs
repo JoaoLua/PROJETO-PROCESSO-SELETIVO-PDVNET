@@ -1,4 +1,4 @@
-using ControleCaixa.Bussines.Services;
+using ControleCaixa.Business.Services;
 using ControleCaixa.Model.DTOs;
 
 namespace PDVnet.ControleCaixa.UI.ViewModels

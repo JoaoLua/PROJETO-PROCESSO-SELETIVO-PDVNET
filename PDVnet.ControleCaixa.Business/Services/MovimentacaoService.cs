@@ -4,9 +4,9 @@ using System.Linq;
 using ControleCaixa.Model;
 using ControleCaixa.Model.Interfaces;
 using ControleCaixa.Model.DTOs;
-using ControleCaixa.Bussines.Validators;
+using ControleCaixa.Business.Validators;
 
-namespace ControleCaixa.Bussines.Services
+namespace ControleCaixa.Business.Services
 {
     public class MovimentacaoService : IMovimentacaoService
     {

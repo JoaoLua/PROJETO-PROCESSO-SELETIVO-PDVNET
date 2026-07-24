@@ -3,7 +3,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ControleCaixa.Model;
 using ControleCaixa.Model.Enums;
-using ControleCaixa.Bussines.Validators;
+using ControleCaixa.Business.Validators;
 
 namespace PDVnet.ControleCaixa.Tests.Validators
 {

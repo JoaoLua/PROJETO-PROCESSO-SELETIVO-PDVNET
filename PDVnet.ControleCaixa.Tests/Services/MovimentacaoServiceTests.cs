@@ -2,7 +2,7 @@ using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ControleCaixa.Model;
 using ControleCaixa.Model.Enums;
-using ControleCaixa.Bussines.Services;
+using ControleCaixa.Business.Services;
 using PDVnet.ControleCaixa.Tests.Fakes;
 
 namespace PDVnet.ControleCaixa.Tests.Services
@@ -76,6 +76,77 @@ namespace PDVnet.ControleCaixa.Tests.Services
 
             // Act
             _service.ListarPorFiltros("", dataInicio, dataFim);
+        }
+
+        [TestMethod]
+        public void Inserir_DeveAtribuirDataMovimentoAutomaticamente()
+        {
+            // Arrange
+            var mov = new MovimentacaoCaixa { Descricao = "Venda", Valor = 50, Tipo = TipoMovimentacao.Entrada };
+
+            // Act
+            _service.Inserir(mov);
+
+            // Assert
+            Assert.AreNotEqual(default(DateTime), mov.DataMovimento, "A data deve ser gerada automaticamente.");
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void Inserir_ValorNegativo_DeveLancarExcecao()
+        {
+            // Arrange
+            var mov = new MovimentacaoCaixa { Descricao = "Teste", Valor = -10, Tipo = TipoMovimentacao.Entrada };
+
+            // Act
+            _service.Inserir(mov);
+        }
+
+        [TestMethod]
+        public void Atualizar_DeveModificarDescricao()
+        {
+            // Arrange
+            var mov = new MovimentacaoCaixa { Descricao = "Original", Valor = 100, Tipo = TipoMovimentacao.Entrada };
+            _service.Inserir(mov);
+
+            // Act
+            mov.Descricao = "Alterada";
+            _service.Atualizar(mov);
+            var atualizada = _service.BuscarPorId(mov.Id);
+
+            // Assert
+            Assert.AreEqual("Alterada", atualizada.Descricao);
+        }
+
+        [TestMethod]
+        public void Excluir_DeveRemoverDaListaDeAtivas()
+        {
+            // Arrange
+            var mov = new MovimentacaoCaixa { Descricao = "Para Excluir", Valor = 50, Tipo = TipoMovimentacao.Saida };
+            _service.Inserir(mov);
+            Assert.AreEqual(1, _service.ListarAtivas().Count);
+
+            // Act
+            _service.Excluir(mov.Id);
+
+            // Assert
+            Assert.AreEqual(0, _service.ListarAtivas().Count, "A movimentação excluída não deve aparecer nas ativas.");
+        }
+
+        [TestMethod]
+        public void BuscarPorId_DeveRetornarMovimentacaoCorreta()
+        {
+            // Arrange
+            _service.Inserir(new MovimentacaoCaixa { Descricao = "Primeira", Valor = 10, Tipo = TipoMovimentacao.Entrada });
+            _service.Inserir(new MovimentacaoCaixa { Descricao = "Segunda", Valor = 20, Tipo = TipoMovimentacao.Saida });
+
+            // Act
+            var resultado = _service.BuscarPorId(2);
+
+            // Assert
+            Assert.IsNotNull(resultado);
+            Assert.AreEqual("Segunda", resultado.Descricao);
+            Assert.AreEqual(20m, resultado.Valor);
         }
     }
 }

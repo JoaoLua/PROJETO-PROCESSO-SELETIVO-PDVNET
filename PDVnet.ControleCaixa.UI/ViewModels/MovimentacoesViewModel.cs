@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using ControleCaixa.Model;
-using ControleCaixa.Bussines.Services;
+using ControleCaixa.Business.Services;
 using ControleCaixa.Data;
 using MaterialDesignThemes.Wpf;
 using PDVnet.ControleCaixa.UI.Views;

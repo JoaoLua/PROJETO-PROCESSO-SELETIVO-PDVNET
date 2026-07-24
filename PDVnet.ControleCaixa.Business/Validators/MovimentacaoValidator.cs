@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using ControleCaixa.Model;
 using ControleCaixa.Model.Enums;
 
-namespace ControleCaixa.Bussines.Validators
+namespace ControleCaixa.Business.Validators
 {
     public class MovimentacaoValidator
     {
