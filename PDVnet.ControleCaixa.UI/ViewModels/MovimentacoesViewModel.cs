@@ -6,7 +6,6 @@ using ControleCaixa.Model;
 using ControleCaixa.Model.Enums;
 using ControleCaixa.Model.Interfaces;
 using ControleCaixa.Business.Services;
-using ControleCaixa.Data;
 using MaterialDesignThemes.Wpf;
 using PDVnet.ControleCaixa.UI.Views;
 using System.Linq;

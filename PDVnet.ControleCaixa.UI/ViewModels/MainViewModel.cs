@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using ControleCaixa.Business.Services;
@@ -28,9 +27,7 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
         public bool IsDashboardSelected => CurrentViewModel is DashboardViewModel;
         public bool IsCategoriasSelected => CurrentViewModel is CategoriasViewModel;
 
-        private readonly string _configPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "PDVnetControleCaixa", "alerta_config.txt");
+        private readonly IConfiguracaoRepository _configuracaoRepository;
 
         private decimal _limiteAlerta = 100m;
         public decimal LimiteAlerta
@@ -41,7 +38,15 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
                 if (SetProperty(ref _limiteAlerta, value))
                 {
                     VerificarAlerta();
-                    SalvarConfiguracao(value);
+                    try
+                    {
+                        _configuracaoRepository.SalvarLimiteAlerta(value);
+                    }
+                    catch (Exception)
+                    {
+                        MensagemAlerta = "Não foi possível salvar sua preferência de alerta.";
+                        MostrarAlerta = true;
+                    }
                 }
             }
         }
@@ -76,12 +81,14 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
         public MainViewModel(
             IMovimentacaoService service,
             ICategoriaService categoriaService,
+            IConfiguracaoRepository configuracaoRepository,
             DashboardViewModel dashboardViewModel,
             MovimentacoesViewModel movimentacoesViewModel,
             CategoriasViewModel categoriasViewModel)
         {
             _service = service;
             _categoriaService = categoriaService;
+            _configuracaoRepository = configuracaoRepository;
 
             _dashboardViewModel = dashboardViewModel;
             _dashboardViewModel.LimiteAlerta = this.LimiteAlerta;
@@ -92,7 +99,9 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
 
             _categoriasViewModel = categoriasViewModel;
 
-            CarregarConfiguracao();
+            _limiteAlerta = _configuracaoRepository.ObterLimiteAlerta();
+            if (_dashboardViewModel != null)
+                _dashboardViewModel.LimiteAlerta = _limiteAlerta;
 
             AbrirMovimentacoesCommand = new RelayCommand(_ => AbrirMovimentacoes());
             AbrirDashboardCommand = new RelayCommand(async _ => await AbrirDashboardAsync());
@@ -141,35 +150,5 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             }
         }
 
-        private void CarregarConfiguracao()
-        {
-            try
-            {
-                if (File.Exists(_configPath))
-                {
-                    var conteudo = File.ReadAllText(_configPath);
-                    if (decimal.TryParse(conteudo, out decimal valorSalvo))
-                    {
-                        _limiteAlerta = valorSalvo;
-                        if (_dashboardViewModel != null)
-                            _dashboardViewModel.LimiteAlerta = valorSalvo;
-                    }
-                }
-            }
-            catch { }
-        }
-
-        private void SalvarConfiguracao(decimal valor)
-        {
-            try
-            {
-                var diretorio = Path.GetDirectoryName(_configPath);
-                if (!string.IsNullOrEmpty(diretorio))
-                    Directory.CreateDirectory(diretorio);
-                    
-                File.WriteAllText(_configPath, valor.ToString());
-            }
-            catch { }
-        }
     }
 }

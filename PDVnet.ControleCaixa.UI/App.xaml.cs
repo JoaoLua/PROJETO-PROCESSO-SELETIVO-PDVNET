@@ -27,6 +27,7 @@ public partial class App : Application
     {
         services.AddTransient<ICategoriaRepository, CategoriaRepository>();
         services.AddTransient<IMovimentacaoRepository, MovimentacaoRepository>();
+        services.AddSingleton<IConfiguracaoRepository, ConfiguracaoRepository>();
 
         services.AddTransient<ICategoriaService, CategoriaService>();
         services.AddTransient<IMovimentacaoService, MovimentacaoService>();

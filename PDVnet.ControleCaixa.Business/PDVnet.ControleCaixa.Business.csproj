@@ -1,8 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\PDVnet.ControleCaixa.Model\PDVnet.ControleCaixa.Model.csproj" />
-    <ProjectReference Include="..\PDVnet.ControleCaixa.Data\PDVnet.ControleCaixa.Data.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
