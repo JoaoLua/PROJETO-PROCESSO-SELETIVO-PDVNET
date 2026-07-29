@@ -8,6 +8,7 @@ namespace ControleCaixa.Model
         public int Id { get; set; }
         public required string Descricao { get; set; }
         public TipoMovimentacao Tipo { get; set; } 
+        public int? CategoriaId { get; set; }
         public string? Categoria { get; set; }
         public decimal Valor { get; set; }
         public DateTime DataMovimento { get; set; }

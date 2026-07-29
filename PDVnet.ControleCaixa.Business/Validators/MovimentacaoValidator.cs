@@ -24,12 +24,13 @@ namespace ControleCaixa.Business.Validators
 
             if (movimentacao.Valor <= 0)
                 erros.Add("O Valor não pode ser negativo ou igual a zero; o sinal da movimentação é definido exclusivamente pelo campo Tipo.");
+            else if (movimentacao.Valor > 99999999.99m)
+                erros.Add("O Valor excede o limite máximo permitido de 99.999.999,99.");
 
             if (!Enum.IsDefined(typeof(TipoMovimentacao), movimentacao.Tipo))
                 erros.Add("O tipo de movimentação é inválido.");
 
-            if (movimentacao.Categoria != null && movimentacao.Categoria.Length > 100)
-                erros.Add("A categoria deve ter no máximo 100 caracteres.");
+
 
             return erros;
         }

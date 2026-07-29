@@ -1,44 +1,55 @@
+using System;
+using System.Threading.Tasks;
 using ControleCaixa.Business.Services;
+using ControleCaixa.Model.Interfaces;
 using ControleCaixa.Model.DTOs;
 
 namespace PDVnet.ControleCaixa.UI.ViewModels
 {
     public class DashboardViewModel : BaseViewModel
     {
-        private readonly MainViewModel _mainViewModel;
-        private readonly MovimentacaoService _service;
+        private readonly IMovimentacaoService _service;
 
         private DashboardDTO _resumo;
         public DashboardDTO Resumo
         {
             get => _resumo;
-            set => SetProperty(ref _resumo, value);
-        }
-
-        public decimal LimiteAlerta
-        {
-            get => _mainViewModel.LimiteAlerta;
             set
             {
-                if (_mainViewModel.LimiteAlerta != value)
+                if (SetProperty(ref _resumo, value))
                 {
-                    _mainViewModel.LimiteAlerta = value;
-                    OnPropertyChanged(nameof(LimiteAlerta));
+                    OnPropertyChanged(nameof(IsSaldoNegativo));
                 }
             }
         }
 
-        public DashboardViewModel(MainViewModel mainViewModel, MovimentacaoService service)
+        public bool IsSaldoNegativo => Resumo?.SaldoTotal < 0;
+
+        private decimal _limiteAlerta;
+        public decimal LimiteAlerta
         {
-            _mainViewModel = mainViewModel;
-            _service = service;
-            
-            CarregarDados();
+            get => _limiteAlerta;
+            set
+            {
+                if (SetProperty(ref _limiteAlerta, value))
+                {
+                    LimiteAlertaModificado?.Invoke(value);
+                }
+            }
         }
 
-        public void CarregarDados()
+        public event Action<decimal> LimiteAlertaModificado;
+
+        public DashboardViewModel(IMovimentacaoService service)
         {
-            Resumo = _service.ObterResumoDashboard();
+            _service = service;
+            
+            _ = CarregarDadosAsync();
+        }
+
+        public async Task CarregarDadosAsync()
+        {
+            Resumo = await _service.ObterResumoDashboardAsync();
         }
     }
 }

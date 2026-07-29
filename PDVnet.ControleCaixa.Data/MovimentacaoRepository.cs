@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using ControleCaixa.Model;
 using ControleCaixa.Model.Enums;
@@ -10,53 +11,48 @@ namespace ControleCaixa.Data
 {
     public class MovimentacaoRepository : IMovimentacaoRepository
     {
-        public void Inserir(MovimentacaoCaixa movimentacao)
+        public async Task InserirAsync(MovimentacaoCaixa movimentacao)
         {
             using (var connection = ConnectionHelper.CriarConexao())
             {
-                var query = @"INSERT INTO MovimentacaoCaixa (Descricao, Tipo, Categoria, Valor, DataMovimento, Status) 
-                              VALUES (@Descricao, @Tipo, @Categoria, @Valor, @DataMovimento, @Status)";
+                var query = @"INSERT INTO MovimentacaoCaixa (Descricao, Tipo, CategoriaId, Valor, DataMovimento, Status) 
+                              VALUES (@Descricao, @Tipo, @CategoriaId, @Valor, @DataMovimento, @Status)";
 
                 using (var command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Descricao", movimentacao.Descricao);
                     command.Parameters.AddWithValue("@Tipo", (int)movimentacao.Tipo);
-                    command.Parameters.AddWithValue("@Categoria", (object)movimentacao.Categoria ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@CategoriaId", (object)movimentacao.CategoriaId ?? DBNull.Value);
                     command.Parameters.AddWithValue("@Valor", movimentacao.Valor);
                     command.Parameters.AddWithValue("@DataMovimento", movimentacao.DataMovimento == default ? DateTime.Now : movimentacao.DataMovimento);
-                    command.Parameters.AddWithValue("@Status", true); // Status 1 = Ativo
+                    command.Parameters.AddWithValue("@Status", true); 
 
-                    connection.Open();
-                    command.ExecuteNonQuery();
+                    await connection.OpenAsync();
+                    await command.ExecuteNonQueryAsync();
                 }
             }
         }
 
-        public List<MovimentacaoCaixa> ListarAtivas()
+        public async Task<List<MovimentacaoCaixa>> ListarAtivasAsync()
         {
             var lista = new List<MovimentacaoCaixa>();
 
             using (var connection = ConnectionHelper.CriarConexao())
             {
-                var query = "SELECT Id, Descricao, Tipo, Categoria, Valor, DataMovimento, Status FROM MovimentacaoCaixa WHERE Status = 1 ORDER BY DataMovimento DESC";
+                var query = @"SELECT M.Id, M.Descricao, M.Tipo, M.CategoriaId, C.Nome AS CategoriaNome, M.Valor, M.DataMovimento, M.Status 
+                              FROM MovimentacaoCaixa M 
+                              LEFT JOIN Categoria C ON M.CategoriaId = C.Id 
+                              WHERE M.Status = 1 
+                              ORDER BY M.DataMovimento DESC";
 
                 using (var command = new SqlCommand(query, connection))
                 {
-                    connection.Open();
-                    using (var reader = command.ExecuteReader())
+                    await connection.OpenAsync();
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        while (reader.Read())
+                        while (await reader.ReadAsync())
                         {
-                            lista.Add(new MovimentacaoCaixa
-                            {
-                                Id = Convert.ToInt32(reader["Id"]),
-                                Descricao = reader["Descricao"].ToString(),
-                                Tipo = (TipoMovimentacao)Convert.ToInt32(reader["Tipo"]),
-                                Categoria = reader["Categoria"] != DBNull.Value ? reader["Categoria"].ToString() : null,
-                                Valor = Convert.ToDecimal(reader["Valor"]),
-                                DataMovimento = Convert.ToDateTime(reader["DataMovimento"]),
-                                Status = Convert.ToBoolean(reader["Status"])
-                            });
+                            lista.Add(MapearMovimentacao(reader));
                         }
                     }
                 }
@@ -65,33 +61,54 @@ namespace ControleCaixa.Data
             return lista;
         }
 
-        public List<MovimentacaoCaixa> ListarPorFiltros(string texto, DateTime? dataInicio, DateTime? dataFim)
+        public async Task<List<MovimentacaoCaixa>> ListarPorFiltrosAsync(string texto, DateTime? dataInicio, DateTime? dataFim, string categoria = null, TipoMovimentacao? tipo = null, bool? ativo = true)
         {
             var lista = new List<MovimentacaoCaixa>();
 
             using (var connection = ConnectionHelper.CriarConexao())
             {
-                var query = "SELECT Id, Descricao, Tipo, Categoria, Valor, DataMovimento, Status FROM MovimentacaoCaixa WHERE Status = 1";
+                var query = @"SELECT M.Id, M.Descricao, M.Tipo, M.CategoriaId, C.Nome AS CategoriaNome, M.Valor, M.DataMovimento, M.Status 
+                              FROM MovimentacaoCaixa M 
+                              LEFT JOIN Categoria C ON M.CategoriaId = C.Id 
+                              WHERE 1=1";
+
+                if (ativo.HasValue)
+                {
+                    query += " AND M.Status = @Status";
+                }
 
                 if (!string.IsNullOrWhiteSpace(texto))
                 {
-                    query += " AND Descricao LIKE '%' + @Texto + '%'";
+                    query += " AND M.Descricao LIKE '%' + @Texto + '%'";
                 }
                 
                 if (dataInicio.HasValue)
                 {
-                    query += " AND DataMovimento >= @DataInicio";
+                    query += " AND M.DataMovimento >= @DataInicio";
                 }
                 
                 if (dataFim.HasValue)
                 {
-                    query += " AND DataMovimento <= @DataFim";
+                    query += " AND M.DataMovimento <= @DataFim";
                 }
 
-                query += " ORDER BY DataMovimento DESC";
+                if (!string.IsNullOrWhiteSpace(categoria))
+                {
+                    query += " AND C.Nome = @Categoria";
+                }
+
+                if (tipo.HasValue)
+                {
+                    query += " AND M.Tipo = @Tipo";
+                }
+
+                query += " ORDER BY M.DataMovimento DESC";
 
                 using (var command = new SqlCommand(query, connection))
                 {
+                    if (ativo.HasValue)
+                        command.Parameters.AddWithValue("@Status", ativo.Value);
+
                     if (!string.IsNullOrWhiteSpace(texto))
                         command.Parameters.AddWithValue("@Texto", texto);
                         
@@ -99,24 +116,20 @@ namespace ControleCaixa.Data
                         command.Parameters.AddWithValue("@DataInicio", dataInicio.Value.Date);
                         
                     if (dataFim.HasValue)
-                        // Para pegar até as 23:59:59 do último dia selecionado
                         command.Parameters.AddWithValue("@DataFim", dataFim.Value.Date.AddDays(1).AddTicks(-1));
 
-                    connection.Open();
-                    using (var reader = command.ExecuteReader())
+                    if (!string.IsNullOrWhiteSpace(categoria))
+                        command.Parameters.AddWithValue("@Categoria", categoria);
+
+                    if (tipo.HasValue)
+                        command.Parameters.AddWithValue("@Tipo", (int)tipo.Value);
+
+                    await connection.OpenAsync();
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        while (reader.Read())
+                        while (await reader.ReadAsync())
                         {
-                            lista.Add(new MovimentacaoCaixa
-                            {
-                                Id = Convert.ToInt32(reader["Id"]),
-                                Descricao = reader["Descricao"].ToString(),
-                                Tipo = (TipoMovimentacao)Convert.ToInt32(reader["Tipo"]),
-                                Categoria = reader["Categoria"] != DBNull.Value ? reader["Categoria"].ToString() : null,
-                                Valor = Convert.ToDecimal(reader["Valor"]),
-                                DataMovimento = Convert.ToDateTime(reader["DataMovimento"]),
-                                Status = Convert.ToBoolean(reader["Status"])
-                            });
+                            lista.Add(MapearMovimentacao(reader));
                         }
                     }
                 }
@@ -125,31 +138,25 @@ namespace ControleCaixa.Data
             return lista;
         }
 
-        public MovimentacaoCaixa BuscarPorId(int id)
+        public async Task<MovimentacaoCaixa> BuscarPorIdAsync(int id)
         {
             using (var connection = ConnectionHelper.CriarConexao())
             {
-                var query = "SELECT Id, Descricao, Tipo, Categoria, Valor, DataMovimento, Status FROM MovimentacaoCaixa WHERE Id = @Id";
+                var query = @"SELECT M.Id, M.Descricao, M.Tipo, M.CategoriaId, C.Nome AS CategoriaNome, M.Valor, M.DataMovimento, M.Status 
+                              FROM MovimentacaoCaixa M 
+                              LEFT JOIN Categoria C ON M.CategoriaId = C.Id 
+                              WHERE M.Id = @Id";
 
                 using (var command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Id", id);
-                    connection.Open();
+                    await connection.OpenAsync();
 
-                    using (var reader = command.ExecuteReader())
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        if (reader.Read())
+                        if (await reader.ReadAsync())
                         {
-                            return new MovimentacaoCaixa
-                            {
-                                Id = Convert.ToInt32(reader["Id"]),
-                                Descricao = reader["Descricao"].ToString(),
-                                Tipo = (TipoMovimentacao)Convert.ToInt32(reader["Tipo"]),
-                                Categoria = reader["Categoria"] != DBNull.Value ? reader["Categoria"].ToString() : null,
-                                Valor = Convert.ToDecimal(reader["Valor"]),
-                                DataMovimento = Convert.ToDateTime(reader["DataMovimento"]),
-                                Status = Convert.ToBoolean(reader["Status"])
-                            };
+                            return MapearMovimentacao(reader);
                         }
                     }
                 }
@@ -158,14 +165,14 @@ namespace ControleCaixa.Data
             return null;
         }
 
-        public void Atualizar(MovimentacaoCaixa movimentacao)
+        public async Task AtualizarAsync(MovimentacaoCaixa movimentacao)
         {
             using (var connection = ConnectionHelper.CriarConexao())
             {
                 var query = @"UPDATE MovimentacaoCaixa 
                               SET Descricao = @Descricao, 
                                   Tipo = @Tipo, 
-                                  Categoria = @Categoria, 
+                                  CategoriaId = @CategoriaId, 
                                   Valor = @Valor, 
                                   DataMovimento = @DataMovimento 
                               WHERE Id = @Id";
@@ -175,17 +182,17 @@ namespace ControleCaixa.Data
                     command.Parameters.AddWithValue("@Id", movimentacao.Id);
                     command.Parameters.AddWithValue("@Descricao", movimentacao.Descricao);
                     command.Parameters.AddWithValue("@Tipo", (int)movimentacao.Tipo);
-                    command.Parameters.AddWithValue("@Categoria", (object)movimentacao.Categoria ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@CategoriaId", (object)movimentacao.CategoriaId ?? DBNull.Value);
                     command.Parameters.AddWithValue("@Valor", movimentacao.Valor);
                     command.Parameters.AddWithValue("@DataMovimento", movimentacao.DataMovimento);
 
-                    connection.Open();
-                    command.ExecuteNonQuery();
+                    await connection.OpenAsync();
+                    await command.ExecuteNonQueryAsync();
                 }
             }
         }
 
-        public void Excluir(int id)
+        public async Task ExcluirAsync(int id)
         {
             using (var connection = ConnectionHelper.CriarConexao())
             {
@@ -195,13 +202,29 @@ namespace ControleCaixa.Data
                 {
                     command.Parameters.AddWithValue("@Id", id);
                     
-                    connection.Open();
-                    command.ExecuteNonQuery();
+                    await connection.OpenAsync();
+                    await command.ExecuteNonQueryAsync();
                 }
             }
         }
 
-        public DashboardDTO ObterResumoDashboard()
+        public async Task ReativarAsync(int id)
+        {
+            using (var connection = ConnectionHelper.CriarConexao())
+            {
+                var query = "UPDATE MovimentacaoCaixa SET Status = 1 WHERE Id = @Id";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Id", id);
+                    
+                    await connection.OpenAsync();
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+        }
+
+        public async Task<DashboardDTO> ObterResumoDashboardAsync()
         {
             var dto = new DashboardDTO();
 
@@ -218,10 +241,10 @@ namespace ControleCaixa.Data
 
                 using (var command = new SqlCommand(query, connection))
                 {
-                    connection.Open();
-                    using (var reader = command.ExecuteReader())
+                    await connection.OpenAsync();
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        if (reader.Read())
+                        if (await reader.ReadAsync())
                         {
                             dto.TotalMovimentacoes = Convert.ToInt32(reader["TotalMovimentacoes"]);
                             dto.TotalEntradas = Convert.ToDecimal(reader["TotalEntradas"]);
@@ -233,6 +256,21 @@ namespace ControleCaixa.Data
             }
 
             return dto;
+        }
+
+        private MovimentacaoCaixa MapearMovimentacao(SqlDataReader reader)
+        {
+            return new MovimentacaoCaixa
+            {
+                Id = Convert.ToInt32(reader["Id"]),
+                Descricao = reader["Descricao"].ToString(),
+                Tipo = (TipoMovimentacao)Convert.ToInt32(reader["Tipo"]),
+                CategoriaId = reader["CategoriaId"] != DBNull.Value ? Convert.ToInt32(reader["CategoriaId"]) : (int?)null,
+                Categoria = reader["CategoriaNome"] != DBNull.Value ? reader["CategoriaNome"].ToString() : null,
+                Valor = Convert.ToDecimal(reader["Valor"]),
+                DataMovimento = Convert.ToDateTime(reader["DataMovimento"]),
+                Status = Convert.ToBoolean(reader["Status"])
+            };
         }
     }
 }

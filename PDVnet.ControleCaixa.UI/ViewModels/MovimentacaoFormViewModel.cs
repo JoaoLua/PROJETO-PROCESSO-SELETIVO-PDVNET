@@ -3,15 +3,21 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Windows;
 using System.Windows.Input;
+using System.Threading.Tasks;
+using System.Collections.ObjectModel;
 using ControleCaixa.Model;
 using ControleCaixa.Model.Enums;
+using ControleCaixa.Model.Interfaces;
+using ControleCaixa.Business.Services;
 using MaterialDesignThemes.Wpf;
 
 namespace PDVnet.ControleCaixa.UI.ViewModels
 {
     public class MovimentacaoFormViewModel : BaseViewModel, IDataErrorInfo
     {
+        private readonly ICategoriaService _categoriaService;
         private MovimentacaoCaixa _movimentacao;
         
         public bool IsEditMode => _movimentacao.Id > 0;
@@ -23,17 +29,12 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             TipoMovimentacao.Saida 
         };
 
-        public List<string> CategoriasDisponiveis { get; } = new List<string>
+        private ObservableCollection<Categoria> _categoriasDisponiveis;
+        public ObservableCollection<Categoria> CategoriasDisponiveis
         {
-            "Vendas",
-            "Pagamentos",
-            "Serviços Agregados",
-            "Recebimento de Fornecedores",
-            "Contas de Consumo",
-            "Salário",
-            "Manutenção e Reparos",
-            "Outros"
-        };
+            get => _categoriasDisponiveis;
+            private set => SetProperty(ref _categoriasDisponiveis, value);
+        }
 
         private string _descricao;
         public string Descricao
@@ -57,7 +58,6 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             {
                 if (SetProperty(ref _valorTexto, value))
                 {
-                    // Normaliza: troca vírgula por ponto para parsing
                     var normalizado = (value ?? "").Replace(',', '.');
                     if (decimal.TryParse(normalizado, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal resultado))
                         _valor = resultado;
@@ -76,34 +76,48 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             set => SetProperty(ref _tipo, value);
         }
 
-        private string _categoria;
-        public string Categoria
+        private int? _categoriaId;
+        public int? CategoriaId
         {
-            get => _categoria;
-            set => SetProperty(ref _categoria, value);
+            get => _categoriaId;
+            set => SetProperty(ref _categoriaId, value);
         }
 
         public ICommand SalvarCommand { get; }
         public ICommand CancelarCommand { get; }
 
-        public MovimentacaoFormViewModel(MovimentacaoCaixa movimentacaoExistente = null)
+        public MovimentacaoFormViewModel(ICategoriaService categoriaService, MovimentacaoCaixa movimentacaoExistente = null)
         {
+            _categoriaService = categoriaService;
+            CategoriasDisponiveis = new ObservableCollection<Categoria>();
 
             _movimentacao = movimentacaoExistente ?? new MovimentacaoCaixa() 
             { 
                 DataMovimento = DateTime.Now,
-                Descricao = "",
-                Categoria = ""
+                Descricao = ""
             };
 
             Descricao = _movimentacao.Descricao ?? "";
             ValorTexto = _movimentacao.Valor > 0 ? _movimentacao.Valor.ToString("F2", CultureInfo.InvariantCulture) : "";
             Tipo = _movimentacao.Tipo;
-            Categoria = string.IsNullOrEmpty(_movimentacao.Categoria) ? CategoriasDisponiveis[0] : _movimentacao.Categoria;
+            CategoriaId = _movimentacao.CategoriaId;
 
             SalvarCommand = new RelayCommand(_ => Salvar(), _ => PodeSalvar());
             
             CancelarCommand = new RelayCommand(_ => DialogHost.CloseDialogCommand.Execute(false, null));
+
+            _ = CarregarCategoriasAsync();
+        }
+
+        private async Task CarregarCategoriasAsync()
+        {
+            var cats = await _categoriaService.ListarTodasAsync();
+            CategoriasDisponiveis = new ObservableCollection<Categoria>(cats);
+
+            if (_movimentacao.Id == 0 && !CategoriaId.HasValue && CategoriasDisponiveis.Count > 0)
+            {
+                CategoriaId = CategoriasDisponiveis[0].Id;
+            }
         }
 
         private void Salvar()
@@ -111,7 +125,7 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
             _movimentacao.Descricao = Descricao;
             _movimentacao.Valor = Valor;
             _movimentacao.Tipo = Tipo;
-            _movimentacao.Categoria = Categoria;
+            _movimentacao.CategoriaId = CategoriaId;
 
             DialogHost.CloseDialogCommand.Execute(_movimentacao, null);
         }
@@ -127,7 +141,7 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
         {
             get
             {
-                var errors = new[] { this[nameof(Descricao)], this[nameof(ValorTexto)], this[nameof(Categoria)] };
+                var errors = new[] { this[nameof(Descricao)], this[nameof(ValorTexto)], this[nameof(CategoriaId)], this[nameof(Tipo)] };
                 return errors.Any(e => e != null) ? "Erros no formulário" : null;
             }
         }
@@ -144,8 +158,11 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
                 if (columnName == nameof(ValorTexto) && Valor <= 0)
                     result = "O valor deve ser maior que zero.";
                 
-                if (columnName == nameof(Categoria) && string.IsNullOrWhiteSpace(Categoria))
+                if (columnName == nameof(CategoriaId) && !CategoriaId.HasValue)
                     result = "A categoria é obrigatória.";
+
+                if (columnName == nameof(Tipo) && (!Enum.IsDefined(typeof(TipoMovimentacao), Tipo) || (int)Tipo == 0))
+                    result = "O tipo da movimentação é obrigatório.";
 
                 CommandManager.InvalidateRequerySuggested();
                 

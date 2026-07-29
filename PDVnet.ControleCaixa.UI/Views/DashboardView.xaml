@@ -28,7 +28,18 @@
                         <materialDesign:PackIcon Kind="Wallet" Width="24" Height="24"/>
                         <TextBlock Text="Saldo Total" FontSize="16" Margin="10,0,0,0" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock Text="{Binding Resumo.SaldoTotal, StringFormat=C}" FontSize="28" FontWeight="Bold" Margin="0,15,0,0"/>
+                    <TextBlock Text="{Binding Resumo.SaldoTotal, StringFormat=C}" FontSize="28" FontWeight="Bold" Margin="0,15,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSaldoNegativo}" Value="True">
+                                        <Setter Property="Foreground" Value="#FF4C4C"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
             </materialDesign:Card>
 

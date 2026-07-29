@@ -1,18 +1,21 @@
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using ControleCaixa.Model.DTOs;
 
 namespace ControleCaixa.Model.Interfaces
 {
     public interface IMovimentacaoService
     {
-        void Inserir(MovimentacaoCaixa movimentacao);
-        List<MovimentacaoCaixa> ListarAtivas();
-        List<MovimentacaoCaixa> ListarPorFiltros(string texto, System.DateTime? dataInicio, System.DateTime? dataFim);
-        bool VerificarAlertaSaldoBaixo(decimal limiteMinimo);
-        MovimentacaoCaixa BuscarPorId(int id);
-        void Atualizar(MovimentacaoCaixa movimentacao);
-        void Excluir(int id);
+        Task InserirAsync(MovimentacaoCaixa movimentacao);
+        Task<List<MovimentacaoCaixa>> ListarAtivasAsync();
+        Task<List<MovimentacaoCaixa>> ListarPorFiltrosAsync(string texto, DateTime? dataInicio, DateTime? dataFim, string categoria = null, Enums.TipoMovimentacao? tipo = null, bool? ativo = true);
+        Task<bool> VerificarAlertaSaldoBaixoAsync(decimal limiteMinimo);
+        Task<MovimentacaoCaixa> BuscarPorIdAsync(int id);
+        Task AtualizarAsync(MovimentacaoCaixa movimentacao);
+        Task ExcluirAsync(int id);
+        Task ReativarAsync(int id);
         
-        DashboardDTO ObterResumoDashboard();
+        Task<DashboardDTO> ObterResumoDashboardAsync();
     }
 }

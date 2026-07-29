@@ -1,21 +1,32 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using ControleCaixa.Business.Services;
-using ControleCaixa.Data;
+using ControleCaixa.Model.Interfaces;
 
 namespace PDVnet.ControleCaixa.UI.ViewModels
 {
     public class MainViewModel : BaseViewModel
     {
-        private readonly MovimentacaoService _service;
-
         private BaseViewModel _currentViewModel;
         public BaseViewModel CurrentViewModel
         {
             get => _currentViewModel;
-            set => SetProperty(ref _currentViewModel, value);
+            set
+            {
+                if (SetProperty(ref _currentViewModel, value))
+                {
+                    OnPropertyChanged(nameof(IsMovimentacoesSelected));
+                    OnPropertyChanged(nameof(IsDashboardSelected));
+                    OnPropertyChanged(nameof(IsCategoriasSelected));
+                }
+            }
         }
+
+        public bool IsMovimentacoesSelected => CurrentViewModel is MovimentacoesViewModel;
+        public bool IsDashboardSelected => CurrentViewModel is DashboardViewModel;
+        public bool IsCategoriasSelected => CurrentViewModel is CategoriasViewModel;
 
         private readonly string _configPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -51,58 +62,68 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
 
         private decimal _saldoAtual;
 
+        private readonly IMovimentacaoService _service;
+        private readonly ICategoriaService _categoriaService;
+
         public ICommand AbrirMovimentacoesCommand { get; }
         public ICommand AbrirDashboardCommand { get; }
-
-        public MainViewModel()
-        {
-            CarregarConfiguracao();
-            
-            _service = new MovimentacaoService(new MovimentacaoRepository());
-
-            AbrirMovimentacoesCommand = new RelayCommand(_ => AbrirMovimentacoes());
-            AbrirDashboardCommand = new RelayCommand(_ => AbrirDashboard());
-            
-            AbrirMovimentacoes();
-            
-            AtualizarResumo();
-        }
+        public ICommand AbrirCategoriasCommand { get; }
 
         private DashboardViewModel _dashboardViewModel;
         private MovimentacoesViewModel _movimentacoesViewModel;
+        private CategoriasViewModel _categoriasViewModel;
+
+        public MainViewModel(
+            IMovimentacaoService service,
+            ICategoriaService categoriaService,
+            DashboardViewModel dashboardViewModel,
+            MovimentacoesViewModel movimentacoesViewModel,
+            CategoriasViewModel categoriasViewModel)
+        {
+            _service = service;
+            _categoriaService = categoriaService;
+
+            _dashboardViewModel = dashboardViewModel;
+            _dashboardViewModel.LimiteAlerta = this.LimiteAlerta;
+            _dashboardViewModel.LimiteAlertaModificado += (val) => this.LimiteAlerta = val;
+
+            _movimentacoesViewModel = movimentacoesViewModel;
+            _movimentacoesViewModel.OnMovimentacaoSaved += () => _ = AtualizarResumoAsync();
+
+            _categoriasViewModel = categoriasViewModel;
+
+            CarregarConfiguracao();
+
+            AbrirMovimentacoesCommand = new RelayCommand(_ => AbrirMovimentacoes());
+            AbrirDashboardCommand = new RelayCommand(async _ => await AbrirDashboardAsync());
+            AbrirCategoriasCommand = new RelayCommand(_ => AbrirCategorias());
+            
+            AbrirMovimentacoes();
+            
+            _ = AtualizarResumoAsync();
+        }
 
         private void AbrirMovimentacoes()
         {
-            if (_movimentacoesViewModel == null)
-            {
-                _movimentacoesViewModel = new MovimentacoesViewModel(() => AtualizarResumo());
-            }
-            else
-            {
-                _movimentacoesViewModel.BuscarCommand.Execute(null);
-            }
-            
+            _movimentacoesViewModel.BuscarCommand.Execute(null);
             CurrentViewModel = _movimentacoesViewModel;
         }
 
-        private void AbrirDashboard()
+        private async Task AbrirDashboardAsync()
         {
-            if (_dashboardViewModel == null)
-            {
-                _dashboardViewModel = new DashboardViewModel(this, _service);
-            }
-            else
-            {
-                _dashboardViewModel.CarregarDados();
-            }
-
-            AtualizarResumo();
+            await _dashboardViewModel.CarregarDadosAsync();
+            await AtualizarResumoAsync();
             CurrentViewModel = _dashboardViewModel;
         }
 
-        public void AtualizarResumo()
+        private void AbrirCategorias()
         {
-            var resumo = _service.ObterResumoDashboard();
+            CurrentViewModel = _categoriasViewModel;
+        }
+
+        public async Task AtualizarResumoAsync()
+        {
+            var resumo = await _service.ObterResumoDashboardAsync();
             _saldoAtual = resumo.SaldoTotal;
             VerificarAlerta();
         }
@@ -130,6 +151,8 @@ namespace PDVnet.ControleCaixa.UI.ViewModels
                     if (decimal.TryParse(conteudo, out decimal valorSalvo))
                     {
                         _limiteAlerta = valorSalvo;
+                        if (_dashboardViewModel != null)
+                            _dashboardViewModel.LimiteAlerta = valorSalvo;
                     }
                 }
             }

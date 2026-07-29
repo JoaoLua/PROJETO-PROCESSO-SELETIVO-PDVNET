@@ -1,0 +1,77 @@
+<UserControl x:Class="PDVnet.ControleCaixa.UI.Views.CategoriasView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Background="#FFFFFF">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Gerenciar Categorias" FontSize="24" FontWeight="Bold" Foreground="#333333" Margin="0,0,0,20"/>
+
+        <Border Grid.Row="1" Background="#FFEBEE" BorderBrush="#FFCDD2" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,15">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Visible"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding MensagemErro}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding MensagemErro}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock Text="{Binding MensagemErro}" Foreground="#D32F2F" TextWrapping="Wrap"/>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="350"/>
+            </Grid.ColumnDefinitions>
+
+            <materialDesign:Card Grid.Column="0" Margin="0,0,20,0" Padding="0">
+                <DataGrid ItemsSource="{Binding Categorias}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" 
+                          HeadersVisibility="Column" Background="Transparent" BorderThickness="0">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Nome da Categoria" Binding="{Binding Nome}" Width="*" IsReadOnly="True" />
+                        <DataGridTemplateColumn Header="Ações" Width="100">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding DataContext.RemoverCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                                            CommandParameter="{Binding Id}"
+                                            Style="{StaticResource MaterialDesignIconForegroundButton}"
+                                            ToolTip="Excluir Categoria" Foreground="#DC143C">
+                                        <materialDesign:PackIcon Kind="TrashCan" />
+                                    </Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </materialDesign:Card>
+
+            <materialDesign:Card Grid.Column="1" Padding="20" VerticalAlignment="Top">
+                <StackPanel>
+                    <TextBlock Text="Adicionar Nova Categoria" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,15" Foreground="#021651"/>
+                    
+                    <TextBox materialDesign:HintAssist.Hint="Nome da Categoria"
+                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                             Text="{Binding NovaCategoriaNome, UpdateSourceTrigger=PropertyChanged}"
+                             MaxLength="100"
+                             Margin="0,0,0,20"/>
+                             
+                    <Button Content="Adicionar Categoria"
+                            Command="{Binding AdicionarCommand}"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Background="#021651" BorderBrush="#021651" Foreground="#FFFFFF" />
+                </StackPanel>
+            </materialDesign:Card>
+        </Grid>
+    </Grid>
+</UserControl>

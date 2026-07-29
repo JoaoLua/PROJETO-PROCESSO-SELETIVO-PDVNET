@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ControleCaixa.Model;
 using ControleCaixa.Model.Enums;
@@ -21,14 +22,14 @@ namespace PDVnet.ControleCaixa.Tests.Services
         }
 
         [TestMethod]
-        public void ObterResumoDashboard_DeveCalcularSaldoCorretamente()
+        public async Task ObterResumoDashboard_DeveCalcularSaldoCorretamente()
         {
 
-            _service.Inserir(new MovimentacaoCaixa { Descricao = "Venda", Valor = 100, Tipo = TipoMovimentacao.Entrada, Categoria = "" });
-            _service.Inserir(new MovimentacaoCaixa { Descricao = "Pagamento", Valor = 30, Tipo = TipoMovimentacao.Saida, Categoria = "" });
-            _service.Inserir(new MovimentacaoCaixa { Descricao = "Venda 2", Valor = 50, Tipo = TipoMovimentacao.Entrada, Categoria = "" });
+            await _service.InserirAsync(new MovimentacaoCaixa { Descricao = "Venda", Valor = 100, Tipo = TipoMovimentacao.Entrada, Categoria = "" });
+            await _service.InserirAsync(new MovimentacaoCaixa { Descricao = "Pagamento", Valor = 30, Tipo = TipoMovimentacao.Saida, Categoria = "" });
+            await _service.InserirAsync(new MovimentacaoCaixa { Descricao = "Venda 2", Valor = 50, Tipo = TipoMovimentacao.Entrada, Categoria = "" });
 
-            var resumo = _service.ObterResumoDashboard();
+            var resumo = await _service.ObterResumoDashboardAsync();
 
             Assert.AreEqual(150m, resumo.TotalEntradas);
             Assert.AreEqual(30m, resumo.TotalSaidas);
@@ -36,92 +37,92 @@ namespace PDVnet.ControleCaixa.Tests.Services
         }
 
         [TestMethod]
-        public void VerificarAlertaSaldoBaixo_DeveRetornarTrue_QuandoAbaixoDoMinimo()
+        public async Task VerificarAlertaSaldoBaixo_DeveRetornarTrue_QuandoAbaixoDoMinimo()
         {
 
-            _service.Inserir(new MovimentacaoCaixa { Descricao = "Venda", Valor = 100, Tipo = TipoMovimentacao.Entrada, Categoria = "" });
-            _service.Inserir(new MovimentacaoCaixa { Descricao = "Saida", Valor = 90, Tipo = TipoMovimentacao.Saida, Categoria = "" });
+            await _service.InserirAsync(new MovimentacaoCaixa { Descricao = "Venda", Valor = 100, Tipo = TipoMovimentacao.Entrada, Categoria = "" });
+            await _service.InserirAsync(new MovimentacaoCaixa { Descricao = "Saida", Valor = 90, Tipo = TipoMovimentacao.Saida, Categoria = "" });
 
 
-            bool disparouAlerta = _service.VerificarAlertaSaldoBaixo(50m); 
+            bool disparouAlerta = await _service.VerificarAlertaSaldoBaixoAsync(50m); 
 
             Assert.IsTrue(disparouAlerta);
         }
 
         [TestMethod]
-        public void VerificarAlertaSaldoBaixo_DeveRetornarFalse_QuandoAcimaDoMinimo()
+        public async Task VerificarAlertaSaldoBaixo_DeveRetornarFalse_QuandoAcimaDoMinimo()
         {
 
-            _service.Inserir(new MovimentacaoCaixa { Descricao = "Venda", Valor = 100, Tipo = TipoMovimentacao.Entrada, Categoria = "" });
+            await _service.InserirAsync(new MovimentacaoCaixa { Descricao = "Venda", Valor = 100, Tipo = TipoMovimentacao.Entrada, Categoria = "" });
 
 
-            bool disparouAlerta = _service.VerificarAlertaSaldoBaixo(50m); 
+            bool disparouAlerta = await _service.VerificarAlertaSaldoBaixoAsync(50m); 
 
             Assert.IsFalse(disparouAlerta);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
-        public void ListarPorFiltros_DataInicioMaiorQueDataFim_DeveLancarExcecao()
+        public async Task ListarPorFiltros_DataInicioMaiorQueDataFim_DeveLancarExcecao()
         {
 
             var dataInicio = new DateTime(2023, 12, 31);
             var dataFim = new DateTime(2023, 01, 01);
 
-            _service.ListarPorFiltros("", dataInicio, dataFim);
+            await _service.ListarPorFiltrosAsync("", dataInicio, dataFim);
         }
 
         [TestMethod]
-        public void Inserir_DeveAtribuirDataMovimentoAutomaticamente()
+        public async Task Inserir_DeveAtribuirDataMovimentoAutomaticamente()
         {
             var mov = new MovimentacaoCaixa { Descricao = "Venda", Valor = 50, Tipo = TipoMovimentacao.Entrada };
 
-            _service.Inserir(mov);
+            await _service.InserirAsync(mov);
 
             Assert.AreNotEqual(default(DateTime), mov.DataMovimento, "A data deve ser gerada automaticamente.");
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
-        public void Inserir_ValorNegativo_DeveLancarExcecao()
+        public async Task Inserir_ValorNegativo_DeveLancarExcecao()
         {
             var mov = new MovimentacaoCaixa { Descricao = "Teste", Valor = -10, Tipo = TipoMovimentacao.Entrada };
 
-            _service.Inserir(mov);
+            await _service.InserirAsync(mov);
         }
 
         [TestMethod]
-        public void Atualizar_DeveModificarDescricao()
+        public async Task Atualizar_DeveModificarDescricao()
         {
             var mov = new MovimentacaoCaixa { Descricao = "Original", Valor = 100, Tipo = TipoMovimentacao.Entrada };
-            _service.Inserir(mov);
+            await _service.InserirAsync(mov);
 
             mov.Descricao = "Alterada";
-            _service.Atualizar(mov);
-            var atualizada = _service.BuscarPorId(mov.Id);
+            await _service.AtualizarAsync(mov);
+            var atualizada = await _service.BuscarPorIdAsync(mov.Id);
 
             Assert.AreEqual("Alterada", atualizada.Descricao);
         }
 
         [TestMethod]
-        public void Excluir_DeveRemoverDaListaDeAtivas()
+        public async Task Excluir_DeveRemoverDaListaDeAtivas()
         {
             var mov = new MovimentacaoCaixa { Descricao = "Para Excluir", Valor = 50, Tipo = TipoMovimentacao.Saida };
-            _service.Inserir(mov);
-            Assert.AreEqual(1, _service.ListarAtivas().Count);
+            await _service.InserirAsync(mov);
+            Assert.AreEqual(1, (await _service.ListarAtivasAsync()).Count);
 
-            _service.Excluir(mov.Id);
+            await _service.ExcluirAsync(mov.Id);
 
-            Assert.AreEqual(0, _service.ListarAtivas().Count, "A movimentação excluída não deve aparecer nas ativas.");
+            Assert.AreEqual(0, (await _service.ListarAtivasAsync()).Count, "A movimentação excluída não deve aparecer nas ativas.");
         }
 
         [TestMethod]
-        public void BuscarPorId_DeveRetornarMovimentacaoCorreta()
+        public async Task BuscarPorId_DeveRetornarMovimentacaoCorreta()
         {
-            _service.Inserir(new MovimentacaoCaixa { Descricao = "Primeira", Valor = 10, Tipo = TipoMovimentacao.Entrada });
-            _service.Inserir(new MovimentacaoCaixa { Descricao = "Segunda", Valor = 20, Tipo = TipoMovimentacao.Saida });
+            await _service.InserirAsync(new MovimentacaoCaixa { Descricao = "Primeira", Valor = 10, Tipo = TipoMovimentacao.Entrada });
+            await _service.InserirAsync(new MovimentacaoCaixa { Descricao = "Segunda", Valor = 20, Tipo = TipoMovimentacao.Saida });
 
-            var resultado = _service.BuscarPorId(2);
+            var resultado = await _service.BuscarPorIdAsync(2);
 
             Assert.IsNotNull(resultado);
             Assert.AreEqual("Segunda", resultado.Descricao);
